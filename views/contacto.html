@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NeoApps - Contacto</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
+
+  <style>
+    #map { height: 500px; margin-top: 20px; }
+    .info-contacto { margin-top: 20px; }
+    #ruta-info { margin-top: 10px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="logo"><a href="/index.html">NeoApps<span>.</span></a></div>
+      <nav class="nav">
+        <a href="/index.html" class="nav-link">Inicio</a>
+        <a href="/views/galeria.html" class="nav-link">Galería</a>
+        <a href="/views/presupuesto.html" class="nav-link">Presupuesto</a>
+        <a href="/views/contacto.html" class="nav-link active">Contacto</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="container">
+      <h1>Contacto</h1>
+
+      <div class="info-contacto">
+        <p><strong>Dirección:</strong> Plaza Mayor, Madrid, España</p>
+        <p><strong>Teléfono:</strong> 643 252 865</p>
+        <p><strong>Email:</strong> contacto@neoapps.com</p>
+      </div>
+
+      <div id="ruta-info">Detectando tu ubicación y calculando la ruta...</div>
+      <div id="map"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>📍 Plaza Mayor, Madrid, España</p>
+      <p>Aviso legal</p>
+      <p>&copy; 2025 NeoApps</p>
+    </div>
+  </footer>
+
+  <!-- JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
+
+  <script>
+    const empresaCoords = [40.415363, -3.707398]; // Plaza Mayor Madrid
+    const map = L.map('map').setView(empresaCoords, 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    L.marker(empresaCoords).addTo(map)
+      .bindPopup('<b>NeoApps</b><br>Plaza Mayor, Madrid')
+      .openPopup();
+
+    const rutaInfo = document.getElementById("ruta-info");
+    let control = null;
+
+    // Detectar la ubicación del visitante
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const visitanteCoords = [position.coords.latitude, position.coords.longitude];
+
+          L.marker(visitanteCoords).addTo(map)
+            .bindPopup('<b>Tu ubicación</b>').openPopup();
+
+          // Calcular la ruta
+          control = L.Routing.control({
+            waypoints: [
+              L.latLng(visitanteCoords[0], visitanteCoords[1]),
+              L.latLng(empresaCoords[0], empresaCoords[1])
+            ],
+            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+            showAlternatives: false,
+            fitSelectedRoutes: true,
+            language: 'es',
+            routeWhileDragging: true
+          }).addTo(map);
+
+          control.on('routesfound', function(e) {
+            const summary = e.routes[0].summary;
+            rutaInfo.innerHTML = `
+              <p>Distancia: ${(summary.totalDistance / 1000).toFixed(2)} km</p>
+              <p>Duración estimada: ${(summary.totalTime / 60).toFixed(0)} minutos</p>
+            `;
+          });
+        },
+        (error) => {
+          rutaInfo.innerHTML = 'No se pudo obtener tu ubicación. Asegúrate de permitir el acceso.';
+          console.error(error);
+        }
+      );
+    } else {
+      rutaInfo.innerHTML = 'Tu navegador no soporta geolocalización.';
+    }
+  </script>
+
+</body>
+</html>
